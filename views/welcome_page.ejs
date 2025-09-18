@@ -1,0 +1,65 @@
+<%- include('partials/header.ejs'); -%>
+
+<!-- THIS IS THE WELCOME TITLE AND MESSAGE -->
+
+    <h1 id="welcome_back_h1"> Welcome Back!</h1>
+    <h3>Log in and take charge of your day.</h3>
+
+    <!-- THIS IS THE CONTAINER THAT INCLUDES THE LOGIN FORM -->
+
+    <div class="login-form-container">
+        <!-- THIS IS THE FORM TO LOGIN -->
+        <form id="login-form" action="/login" method="post"> 
+
+            <!-- THIS IS THE USERNAME  -->
+            <div class="form-floating"> 
+                <input type="text" class="form-control" id="Username" name="username" placeholder="Your username" required>
+            </div> 
+
+            <!-- Password field with eye icon -->
+            <div class="form-floating ">
+              <input type="password" class="form-control" id="Password" name="password" placeholder="Your password" required>
+              <!-- Eye icon -->
+              <i class="fa-solid fa-eye-slash toggle-password" data-toggle="#Password" style="position: absolute; top: 50%; right: 1rem; transform: translateY(-50%); cursor: pointer; color: #6c757d;"></i>
+            </div>
+
+
+            <!-- THIS IS THE LOGIN BUTTON -->
+            <div class="welcome-form-login-button">
+                <button class="login-button" type="submit">Login</button> 
+            </div>
+
+        </form>
+
+    </div>
+
+    <!-- THIS IS THE LINK TO CREATE A SIGN UP -->
+    <p class="new-here">* New here? <a class="signup-link" href="/signup">Create an account</a></p>
+
+<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="/js/signup.js"></script>
+<script src="/js/login.js"></script>
+
+
+<script>
+
+// THIS IS USED FOR THE EYES THAT SHOW AND HIDE THE PASSWORD
+function setupPasswordToggles(container = document) {
+  const toggles = container.querySelectorAll('.toggle-password');
+  toggles.forEach(toggle => {
+    toggle.addEventListener('click', function () {
+      const targetSelector = this.getAttribute('data-toggle');
+      const input = container.querySelector(targetSelector);
+      if (input) {
+        const isPassword = input.type === 'password';
+        input.type = isPassword ? 'text' : 'password';
+        this.classList.toggle('fa-eye');
+        this.classList.toggle('fa-eye-slash');
+      }
+    });
+  });
+}
+
+
+</script>
+<%- include('partials/footer.ejs'); -%>
