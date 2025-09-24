@@ -1,25 +1,26 @@
 <%- include('partials/header.ejs'); -%>
 
 <!-- THI IS THE PURPLE BOX ON TOP -->
-  <div class="box" id="heading">
-    <!-- THIS CONTAINS THE DATE AND THE LOGOUT ICON -->
-    <div class="date-logout-icon-container">
-         <!-- THIS SHOWS THE DATE LIKE Thursday, June 19, 2025 -->
-          <h1 id="date"></h1>
-         
-          <!-- THIS IS THE LOGOUT ICON -->
-          <form action="/logout" method="POST">
-            <button type="submit" class="logout-icon" title="Logout"></button>
-          </form>
-    </div>
-
-    <!-- THIS IS THE TIME LIKE  13:00 -->
-    <div id="time"></div>
-
-    <!-- THIS SHOWS THE PROGRESS BAR FOR WHEN A PERSON DELETES ITEMS FROM THEIR LIST -->
-    <progress id="file" value="<%= progresBar %>" max="100"> </progress>
-
+<div class="box" id="heading">
+  <!-- THIS CONTAINS THE DATE AND THE LOGOUT ICON -->
+  <div class="date-logout-icon-container">
+        <!-- THIS SHOWS THE DATE LIKE Thursday, June 19, 2025 -->
+        <h1 id="date"></h1>
+        
+        <!-- THIS IS THE LOGOUT ICON -->
+        <form action="/logout" method="POST">
+          <button type="submit" class="logout-icon" title="Logout"></button>
+        </form>
   </div>
+
+  <!-- THIS IS THE TIME LIKE  13:00 -->
+  <div id="time"></div>
+
+  <!-- THIS SHOWS THE PROGRESS BAR FOR WHEN A PERSON DELETES ITEMS FROM THEIR LIST -->
+  <progress id="file" value="<%= progresBar %>" max="100"> </progress>
+
+
+</div>
 
 <!-- THIS CONTAINS THE DROPDOWN FILTER AND THE BOX THAT WE ADD ITEMS -->
 <div class="dropdown-box-container">
@@ -42,7 +43,7 @@
 
         <!-- THIS IS THE PART THAT THE ITEMS ARE SHOWN AND ADDED TO THE LIST -->
         <div class="new-item">
-          <!-- THIS IS THE DELETE SQUARE AFTER I ADDED A NEW ITEM ON THE LIST -->
+          <!-- THIS IS THE DELETE CHECKBOX AFTER I ADDED A NEW ITEM ON THE LIST -->
           <form action="/delete" method="post">
             <input class="delete" type="checkbox" onchange="this.form.submit()" name="deleteItemId" value="<%= item.id %>">
             <input type="hidden" name="deleteItemCategory" value="<%= item.category %>">
@@ -79,7 +80,6 @@
             <!-- Text input used for updating the item's title -->
             <!-- Initially hidden (using 'hidden' attribute); can be shown with JavaScript when editing starts -->
             <!-- The 'id' attribute includes the item's ID to uniquely identify this specific input in the DOM -->
-            <!-- This input is NOT used to send the item ID, but rather the new title entered by the user -->
             <input id="input<%= item.id %>" type="text" name="updatedItemTitle" value="<%= item.title %>" autocomplete="off" hidden>
 
 
@@ -95,121 +95,43 @@
         </div>
       <% } %>
 
-        <!-- THIS IS THE ADD BUTTON TO ADD A NEW ITEM TO THE LIST -->
-        <form class="item" action="/add?category=<%= selectedCategory || '' %>" method="post">
+          <!-- THIS IS THE ADD BUTTON TO ADD A NEW ITEM TO THE LIST -->
+          <form class="item" action="/add?category=<%= selectedCategory || '' %>" method="post">
 
-          <input type="text" name="newItem" placeholder="New Item" autocomplete="off" autofocus="true" />
+            <input type="text" name="newItem" placeholder="New Item" autocomplete="off" autofocus="true" />
 
-          <!-- Category selection -->
-          <div class="navbar">
-            <div class="dropdown">
-                <!-- Category selection -->
-                <label for="category-select">Save under category:</label>
-                <!-- <label for="category" class="test">Categories</label> -->
-                <select name="category" class="category" required>
-                  <option value="" disabled selected>Select a category</option>
-                  <option value="School/Work">School/Work</option>
-                  <option value="Groceries">Groceries</option>
-                  <option value="Personal">Personal</option>
-                </select>
+            <!-- Category selection -->
+            <div class="navbar">
+              <div class="dropdown">
+                  <!-- Category selection -->
+                  <label for="category-select">Save under category:</label>
+                  <!-- <label for="category" class="test">Categories</label> -->
+                  <select name="category" class="category" required>
+                    <option value="" disabled selected>Select a category</option>
+                    <option value="School/Work">School/Work</option>
+                    <option value="Groceries">Groceries</option>
+                    <option value="Personal">Personal</option>
+                  </select>
+              </div>
             </div>
-          </div>
 
-          <!-- Importance checkbox -->
-          <input type="checkbox" id="important" value="1" name="importance">
-          <label for="important" class="important-label">Mark as important</label>
+            <!-- Importance checkbox -->
+            <input type="checkbox" id="important" value="1" name="importance">
+            <label for="important" class="important-label">Mark as important</label>
 
-          <!-- THIS IS THE SUBMIT BUTTON -->
-          <button class="add" type="submit" name="list">+</button>
-        </form>
+            <!-- THIS IS THE SUBMIT BUTTON -->
+            <button class="add" type="submit" name="list">+</button>
+          </form>
 
     </div>
 
 </div>
 
-
-
-
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="/js/date_time.js"></script>
 <script src="/js/complete_message.js"></script>
 <script src="/js/dropdown_filter.js"></script>
-
-<script>
-  // const d = new Date();
-  // const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  // document.getElementById("date").innerHTML = d.toLocaleString('en-US', options);
-
-  // document.querySelectorAll(".titles").forEach(el => {
-  //   el.innerHTML = d.toLocaleString('en-US', options);
-  // });
-
-  // function handler(id) {
-  //   document.getElementById("title" + id).setAttribute("hidden", true);
-  //   document.getElementById("edit" + id).setAttribute("hidden", true);
-  //   document.getElementById("done" + id).removeAttribute("hidden");
-  //   document.getElementById("input" + id).removeAttribute("hidden");
-  // }
-
-  // function startTime() {
-  //   const today = new Date();
-  //   let h = today.getHours();
-  //   let m = today.getMinutes();
-  //   // let s = today.getSeconds();
-  //   m = checkTime(m);
-  //   // s = checkTime(s);
-  //   // document.getElementById('time').innerHTML = h + ":" + m + ":" + s;
-  //   document.getElementById('time').innerHTML = h + ":" + m ;
-  //   setTimeout(startTime, 1000);
-  // }
-
-  // function checkTime(i) {
-  //   return i < 10 ? "0" + i : i;
-  // }
-
-  // startTime(); // Don't forget to call it!
+<script src="/js/edit_button.js"></script>
 
 
-
-  // // Wait until the DOM is fully loaded
-  // document.addEventListener("DOMContentLoaded", function () {
-  //   const progressBar = document.getElementById('file');
-
-  //   // Check if the progress is complete (i.e., 100%)
-  //   if (parseInt(progressBar.value) >= 100) {
-
-  //       Swal.fire({
-  //         title: 'Congratulations 🎉',
-  //         text: 'You have completed all your tasks.',
-  //         icon: 'success',
-  //         iconColor:'#a683e3',
-  //         confirmButtonText: 'Ok',
-  //         confirmButtonColor: '#a683e3',
-  //         customClass: {
-  //           popup:'my-swal-border',
-  //         }
-  //       });
-  //   }
-  // });
-
-
-// THIS IS USED FOR THE EDIT BUTTON
-function handler(id) {
-  document.getElementById(`input${id}`).hidden = false;
-  document.getElementById(`done${id}`).hidden = false;
-}
-
-// //THIS IS USED FOR THE DROPDOWN BUTTON TO BE CLICKED TO SHOW FILTER THAT CAN BE USED
-// document.querySelector('.dropbtn').addEventListener('click', function(event) {
-//   event.stopPropagation();
-//   document.querySelector('.dropdown-content').classList.toggle('show');
-// });
-
-// window.addEventListener('click', function() {
-//   const dropdown = document.querySelector('.dropdown-content');
-//   if (dropdown.classList.contains('show')) {
-//     dropdown.classList.remove('show');
-//   }
-// });
-</script>
   <%- include('partials/footer.ejs'); -%>
