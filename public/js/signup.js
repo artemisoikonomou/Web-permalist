@@ -1,5 +1,23 @@
 // THIS IS THE SIGNUP POP UP
 
+// THIS IS USED FOR THE EYES THAT SHOW AND HIDE THE PASSWORD
+function setupPasswordToggles(container = document) {
+  const toggles = container.querySelectorAll('.toggle-password');
+  toggles.forEach(toggle => {
+    toggle.addEventListener('click', function () {
+      const targetSelector = this.getAttribute('data-toggle');
+      const input = container.querySelector(targetSelector);
+      if (input) {
+        const isPassword = input.type === 'password';
+        input.type = isPassword ? 'text' : 'password';
+        this.classList.toggle('fa-eye');
+        this.classList.toggle('fa-eye-slash');
+      }
+    });
+  });
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
     // Attach eye toggle for static page elements
     setupPasswordToggles();
