@@ -62,14 +62,10 @@ function nocache(req, res, next) {
   next(); // Move on to the next middleware or route
 }
 
-let added_item=0;
-let deleted_item=0;
-let progresBar=0;
+// let added_item=0;
+// let deleted_item=0;
+// let progresBar=0;
 
-// let items = [
-//   { id: 1, title: "Buy milk" },
-//   { id: 2, title: "Finish homework" },
-// ];
 
 app.get("/login",nocache,(req,res)=>{
   res.render("welcome_page.ejs", { username: req.session.username });
@@ -168,11 +164,12 @@ app.get("/", nocache, isAuthenticated, async (req, res) => {
     const categoryFilter = req.query.name;
     let query;
     let params;
-
+ 
     //IF THERE WAS A FILTER THAT WAS CHOSEN BY THE USER SHOW THE RESULTS OF THAT CATEGORY
     if (categoryFilter) {
       query = "SELECT * FROM items WHERE user_id = $1 AND category = $2 ORDER BY importance DESC, id DESC";
       params = [req.session.userId, categoryFilter];
+
     } else {
       //ELSE SHOW EVERY NOTE THE USER HAS ADDED NO MATTER THE CATEGORY
       query = "SELECT * FROM items WHERE user_id = $1 ORDER BY importance DESC, id DESC";
@@ -180,18 +177,23 @@ app.get("/", nocache, isAuthenticated, async (req, res) => {
     }
 
     //THIS PART OF THE CODE IS USED FOR THE PROGRESSBAR THAT GETS LOADED WHEN AN ITEM GETS DELETED BUT WE NEED TO SEND TO THE FRONTEND VALUE FOR EVERY CASE
+    
+    //this is the result of the items that already exist
     const result = await db.query(query, params);
     const items = result.rows;
 
-    const totalItems = items.length;
-    const importantItems = items.filter(item => item.importance == 1).length;
-    const progresBar = totalItems > 0 ? Math.round((importantItems / totalItems) * 100) : 0;
+    //this is used to get the amount (counter) of deleted items
+    const result1= await db.query("SELECT deleted_count FROM deleted_items WHERE user_id=$1",[req.session.userId]);
+    
+    //with this take the deleted_count from the first row returned by the query,if nothing is returned use 0 instead
+    //?. prevents an error if the row does not exist
+    const deletedCount=result1.rows[0]?.deleted_count || 0;
 
     //SEND TO THE FRONTEND THE LIST OF ITEMS ,THE PROGRESBAR VALUE AND THE CATEGORY (IF IT WAS CHOSEN)
     res.render("index.ejs", {
       listItems: items,
-      progresBar: progresBar,
-      selectedCategory: categoryFilter || ""  // ✅ Fix added here
+      progresBar: deletedCount,
+      selectedCategory: categoryFilter || ""
     });
   } catch (err) {
     console.log(err);
@@ -206,7 +208,7 @@ app.post("/add", nocache, isAuthenticated, async (req, res) => {
   //GET THE NOTE THAT WAS ADDED , THE IMPORTANCE OF IT (IF IT WAS ADDED) AND THE CATEGORY (IF IT WAS ADDED)
   const item = req.body.newItem;
   const importance = req.body.importance || 0;
-  const category = req.body.category || "Uncategorized";// default if none is passed
+  const category = req.body.category;
 
   //INSERT THEM INSIDE THE TABLE ITEMS
   try {
@@ -215,13 +217,11 @@ app.post("/add", nocache, isAuthenticated, async (req, res) => {
       [item, importance, req.session.userId, category]
     );
 
-     //If the category exists and it's not 'Uncategorized', then do something.
-    // Redirect back to the same category view if available
-    if (category && category !== "Uncategorized") {
-      res.redirect("/?name=" + encodeURIComponent(category));
-    } else {
-      res.redirect("/");
-    }
+    //if everything works fine then go to the page of the category
+    //encodeURIComponent(category) ensures that if your category name has spaces or special characters,
+    //it will be safely included in the URL
+    res.redirect("/?name=" + encodeURIComponent(category));
+
   } catch (err) {
     console.log(err);
     res.status(500).send("Failed to add item");
@@ -236,22 +236,23 @@ app.post("/edit", isAuthenticated, async (req, res) => {
   const { updatedItemId, updatedItemTitle } = req.body;
 
   try {
-    // Step 1: Get the item's category from DB
+    //Get the item's category from DB
     const result = await db.query("SELECT category FROM items WHERE id = $1 AND user_id = $2",[updatedItemId, req.session.userId]);
 
     if (result.rows.length === 0) {
       return res.status(404).send("Item not found or access denied");
     }
 
+    //this saves the first result that came from the category search
     const itemCategory = result.rows[0].category;
+    //this will be used to change the time that the item was edited
+    const updatedTime=new Date();
 
-    // Step 2: Update the item
-    await db.query("UPDATE items SET title = $1 WHERE id = $2 AND user_id = $3",[updatedItemTitle, updatedItemId, req.session.userId]);
+    //Update the item
+    await db.query("UPDATE items SET title = $1 , created_at=$2 WHERE id = $3 AND user_id = $4",[updatedItemTitle,updatedTime, updatedItemId, req.session.userId]);
 
-    // Step 3: Redirect back to the category view
+    // Redirect back to the category view
     if (itemCategory) {
-
-      // Why encodeURIComponent() .Some category names might have special characters (like spaces or slashes). 
       res.redirect(`/categories?name=${encodeURIComponent(itemCategory)}`);
     } else {
       res.redirect("/");
@@ -265,36 +266,54 @@ app.post("/edit", isAuthenticated, async (req, res) => {
 
 //THIS IS USED TO DELETE THE ITEM 
 app.post("/delete", nocache, isAuthenticated, async (req, res) => {
-  // deleted_item++;
 
   //GET THE ID OF THE ITEM THAT WANTS TO BE DELETED
   const id = req.body.deleteItemId;
 
   try {
+
     // First get the deleted item's category before deleting
     const itemResult = await db.query("SELECT category FROM items WHERE id = $1 AND user_id = $2", [id, req.session.userId]);
-    const selectedCategory = itemResult.rows[0]?.category || null;
+    const selectedCategory = itemResult.rows[0]?.category;
 
-    // Delete the item
+    // Delete the item and evry information about it 
     await db.query("DELETE FROM items WHERE id = $1 AND user_id = $2", [id, req.session.userId]);
 
+    //update or insert deleted_items counter
+    await db.query("INSERT INTO deleted_items (user_id,deleted_count) VALUES ($1,1) ON CONFLICT (user_id) DO UPDATE SET deleted_count=deleted_items.deleted_count+1",[req.session.userId]);
+    
     // Fetch items after deletion, filtered by category if it exists
-    const itemsQuery = selectedCategory ? await db.query("SELECT * FROM items WHERE user_id = $1 AND category = $2", [req.session.userId, selectedCategory]) : await db.query("SELECT * FROM items WHERE user_id = $1", [req.session.userId]);
+    const itemsQuery = await db.query("SELECT * FROM items WHERE user_id = $1 AND category = $2", [req.session.userId, selectedCategory]);
 
-    //THIS PART OF THE CODE IS USED FOR THE PROGRESBAR THAT GETS INCREASED WHEN THE USER DELETES SOMETHING
+    //THIS PART OF THE CODE IS USED FOR THE PROGRESSBAR THAT GETS LOADED WHEN AN ITEM GETS DELETED BUT WE NEED TO SEND TO THE FRONTEND VALUE FOR EVERY CASE
+    
+    //this gets all the current items that the user has from the database query result
     const items = itemsQuery.rows;
-    const totalItems = items.length;
 
-    const deletedItemCount = await db.query("SELECT * FROM deleted_items");
-    const totalDeleted = deletedItemCount.rowCount;
+    //fetch the current deleted_count for this user from the deleted_items table
+    const result1=await db.query("SELECT deleted_count FROM deleted_items WHERE user_id = $1 ",[req.session.userId]);
 
-    const progresBar = (totalItems + totalDeleted) === 0? 100: Math.max((totalDeleted / (totalDeleted + totalItems)) * 100, 1);
+    //if there is a row as a result get deleted_count ,otherwise default to 0
+    const deletedCount =result1.rows[0]?.deleted_count ||0;
+
+    //this is the calculation for the ending progressbar value
+    //add the number of current items and the amount of deleted items
+    const totalItems = items.length + deletedCount;
+
+    const progresBar = totalItems > 0 ? Math.round((deletedCount / totalItems) * 100) : 0;
+
+
+    //this is used for when everything is deleted and the amount of progressbar is 100 or more it makes 
+    //deleted_count=0 so the counter starts again 
+    if(progresBar>= 100){
+      await db.query("UPDATE deleted_items SET deleted_count=0 WHERE user_id=$1",[req.session.userId]);
+    }
 
     //SEND BACK THE ITEMS THAT REMAIN ,THE VALUE OF PROGRESSBAR AND THE CATEGORY OF THE ITEM THAT WAS DELTED
     res.render("index.ejs", {
       listItems: items,
-      progresBar,
-      selectedCategory // Pass this back to the view
+      progresBar:progresBar,
+      selectedCategory,
     });
 
   } catch (err) {
@@ -304,7 +323,7 @@ app.post("/delete", nocache, isAuthenticated, async (req, res) => {
 });
 
 
-//THIS IS USE DFOR THE FILTER OF CATEGORIES
+//THIS IS USED FOR THE FILTER OF CATEGORIES
 app.get("/categories", nocache, isAuthenticated, async (req, res) => {
 
   try {
@@ -314,18 +333,17 @@ app.get("/categories", nocache, isAuthenticated, async (req, res) => {
 
     //GET ALL THE ITEMS THAT BELONG TO THE CHOSEN CATEGORY
     const result = await db.query("SELECT * FROM items WHERE user_id = $1 AND category = $2 ORDER BY importance DESC, id DESC",[req.session.userId, categoryFilter]);
+     const items = result.rows;
 
     //THIS IS USED FOR THE PROGRESBAR VALUE
-    const items = result.rows;
-    const totalItems = items.length;
-    const importantItems = items.filter(item => item.importance == 1).length;
-    const progresBar = totalItems > 0 ? Math.round((importantItems / totalItems) * 100) : 0;
+    const result1= await db.query("SELECT deleted_count FROM deleted_items WHERE user_id=$1",[req.session.userId]);
+    const deletedCount=result1.rows[0]?.deleted_count || 0;
 
     //RETURN THE CHOSEN ITEMS ,THE VALUE OF THE PROGRESBAR AND THE CATEGORY THAT WAS CHOSEN
     res.render("index.ejs", {
       listItems: items,
-      progresBar,
-      selectedCategory: categoryFilter || ""
+      progresBar:deletedCount,
+      selectedCategory: categoryFilter
     });
   } catch (error) {
     console.error("Error in /categories route:", error);
@@ -359,3 +377,4 @@ app.post("/logout", (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
+
