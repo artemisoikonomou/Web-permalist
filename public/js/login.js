@@ -3,6 +3,32 @@ document.addEventListener('DOMContentLoaded', () => {
   // Select the login form element by its ID
   const loginForm = document.getElementById('login-form');
 
+    //THIS GETS THE PASSWORD INPUT FIELD
+    const passwordField = document.querySelector("#Password"); 
+    //THIS GETS THE EYETOGGLE ,FOR TOGGLING PASSWORD VISIBILITY
+    const eyeToggle = document.querySelector("#eye-toggle");
+
+    //THIS IS USED FOR WHEN WE CLICK ON THE EYE ICON FOR THE PASSWORD INPUT
+    eyeToggle.addEventListener('click',()=>{
+
+      //THIS IS USED TO CHANGE THE TYPE OF THE INPUT BETWEEN TEXT TO PASSWORD 
+      //IT CHECKS THE PASSWORDS INPUT IF ITS PASSWORD 
+
+      if(passwordField.type==="password"){
+
+        //AND THEN CHANGES THE TYPE INTO TEXT AND CHANGES THE EYE ICON TO THE CLOSE EYE ICON
+        passwordField.setAttribute("type","text");
+        eyeToggle.classList.replace('fa-eye','fa-eye-slash');
+
+      }else{
+
+        //OR ELSE IT CHANGES THE TYPE INTO PASSWORD AND CHANGES THE EYE ICON TO THE OPEN EYE ICON
+        passwordField.setAttribute("type","password");
+        eyeToggle.classList.replace('fa-eye-slash','fa-eye');
+
+      }
+    })
+
   // When the user submits the form
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault(); // Prevent default form submission behavior (like page reload)
